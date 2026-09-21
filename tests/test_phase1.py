@@ -704,8 +704,8 @@ def test_instance_regex_covers_hostname_and_ip():
     class FakeAlert:
         ip = None
         hostname = None
-        entity_id = "p-phy-klx-calc-node-001"
-        node = "p-phy-klx-calc-node-001"
+        entity_id = "p-example-klx-calc-node-001"
+        node = "p-example-klx-calc-node-001"
         namespace = None
         enrichment = None
 
@@ -718,7 +718,7 @@ def test_instance_regex_covers_hostname_and_ip():
             return [{"metric": {"internal_ip": "192.0.2.12"}}]
 
     pattern = _instance_regex(FakeClient(), FakeAlert())
-    assert _re.match(pattern + ".*", "p-phy-klx-calc-node-001:9100")
+    assert _re.match(pattern + ".*", "p-example-klx-calc-node-001:9100")
     assert _re.match(pattern + ".*", "192.0.2.12:9100")
     assert not _re.match(pattern + ".*", "other-node-999:9100")
     assert FakeClient.calls == 1, "富化结果里没有 internal_ip 时才应该去查 Prometheus"

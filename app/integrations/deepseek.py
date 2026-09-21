@@ -142,7 +142,7 @@ def _mask(obj: Any, mapping: dict[str, str], counters: dict[str, int]) -> Any:
     """把资产标识（IP / 主机名）替换为稳定占位符，同一实体映射到同一占位符。
 
     分两类处理，理由是实测踩过两头：
-      · 按**字段**掩资产：真实主机名是 bm-baai-… / p-phy-… 这种，不在关键词表里，
+      · 按**字段**掩资产：真实主机名是 bm-example-… / p-example-… 这种，不在关键词表里，
         靠关键词匹配等于没掩到（而组件名 node-exporter / 规则名 NodeDiskIoBusy 反而被误掩）。
       · 按**模式**掩自由文本：summary / annotations 里的 IP 与主机名靠正则兜底。
     """
