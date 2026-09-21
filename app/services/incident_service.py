@@ -43,10 +43,10 @@ def add_event(
 def next_incident_id(session: Session, at: datetime) -> str:
     """INC-YYYYMMDD-NNN。序号必须**单调递增**，所以不能只看 incidents 表的 MAX。
 
-    为什么：工单被删除（如人工治理）后，只看 incidents 的 MAX 会把已用过的号段再发一次，
+    原因：工单被删除（如人工治理）后，只看 incidents 的 MAX 会把已用过的号段再发一次，
     而飞书留档 feishu_messages 是 append-only 的 —— 撞号会让 already_notified 误判
     「这张工单已经推过卡」，真实告警的卡片被静默跳过。
-    2026-09-15 实测踩到：清理测试单后，用户手动触发的 GPU XID 告警建单时卡片没发出去。
+    曾出现过：清理测试单后，人工触发的 GPU XID 告警建单时卡片没发出去。
     因此同时把飞书留档与时间线里用过的号段算进来。
     """
     prefix = f"INC-{at.strftime('%Y%m%d')}-"
@@ -90,7 +90,7 @@ def apply_diagnosis(session: Session, incident: Incident, result) -> None:
     incident.ai_summary = diagnosis.get("summary")
     incident.ai_diagnosis = diagnosis
     # 标题只接受模型给的**短标题**（≤40 字）。早期版本直接把整段 summary（可能 200+ 字）当标题，
-    # 飞书卡片标题变成一整段话，刷屏且看不清（用户 2026-09-14 反馈）。模型没给就保留原生成标题。
+    # 飞书卡片标题变成一整段话，刷屏且看不清。模型没给就保留原生成标题。
     short_title = str(diagnosis.get("title") or "").strip()
     if short_title and len(short_title) <= 40:
         incident.title = short_title
@@ -375,10 +375,10 @@ def reconcile_incidents(session: Session, incident: Incident) -> str | None:
 def refresh_state(session: Session, incident: Incident, now: datetime | None = None) -> str:
     """按 Alert 状态推进工单状态机。
 
-    ⚠️ 「告警不再来」不等于「恢复」（2026-09-14 修正）：
+    ️ 「告警不再来」不等于「恢复」（2026-09-14 修正）：
     只有夜莺**显式恢复**（is_recovered=true → resolution_reason=resolved）才进恢复观察期；
     单纯 stale 过期只说明这段时间没有新通知，不能自动关单 ——
-    实测几周不可达的僵尸节点每小时被判一次「恢复」并推「工单恢复」卡，语义完全错。
+    几周不可达的僵尸节点每小时被判一次「恢复」并推「工单恢复」卡，语义完全错。
     """
     now = now or utcnow()
     # 必须先 flush：调用方刚把 Alert 置为 RESOLVED 时，不 flush 就查还是 FIRING，

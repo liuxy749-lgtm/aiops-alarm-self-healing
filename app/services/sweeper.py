@@ -33,12 +33,12 @@ def verify_recovery(session: Session, incident: Incident) -> tuple[str, dict]:
     """恢复验证。返回 (state, detail)，state ∈ recovered / not_recovered / unverified。
 
     判据必须「同类型」且精确（2026-09-14 修正，之前出过假恢复）：
-      · 只用 `up{instance=~"<ip>.*"}` 会被中间件地址骗到 —— 实测节点告警的 instance 是
+      · 只用 `up{instance=~"<ip>.*"}` 会被中间件地址骗到 —— 节点告警的 instance 是
         kube-state-metrics 的 198.51.100.210:8080（4 台节点共用），它永远 up=1，
         于是任何这类工单 20 分钟后都判「已恢复」并推卡，而节点其实一直 NotReady。
       · 节点类先看 K8s 权威判据：kube_node_status_condition{node,condition="Ready",status="true"}。
       · `up` 匹配要带 `(:.*)?`：PromQL 的 `=~` 两端自动锚定，写成 `^<ip>:` 等于要求
-        以冒号结尾 → 永远查不到（2026-09-16 实测：GPU XID 工单因此一直挂着不关）。
+        以冒号结尾 → 永远查不到。
       · **查不到任何序列 = 无法确认（unverified），绝不能当成「已恢复」**。
     """
     session.flush()
@@ -93,9 +93,9 @@ def verify_recovery(session: Session, incident: Incident) -> tuple[str, dict]:
         broken: list[str] = []
         no_series: list[str] = []
         for ip in ips:
-            # ⚠️ PromQL 的 =~ 是**两端自动锚定**的：写成 "^IP:" 等于要求以冒号结尾，
+            # PromQL 的 =~ 是**两端自动锚定**的：写成 "^IP:" 等于要求以冒号结尾，
             # 而真实 instance 是 "IP:9400" —— 永远匹配不到，探测就会一直 unverified
-            # （2026-09-16 实测：GPU XID 工单因此挂着不关）。所以尾部必须带 `(:.*)?`。
+            # 。所以尾部必须带 `(:.*)?`。
             rows = client.instant(f'up{{instance=~"^{promql_string(re.escape(ip))}(:.*)?"}}')
             if not rows:
                 no_series.append(ip)
@@ -161,7 +161,7 @@ def _push_resolved_cards(session: Session, resolved_ids: list[str]) -> None:
 def _resolve_recovered(session: Session, now: datetime) -> tuple[int, int]:
     """显式恢复信号（夜莺 is_recovered）走观察期后的判定与关闭。
 
-    ⚠️ 锁纪律：验证（可能打 Prometheus）与推卡片（打飞书）**都不持锁**，只有改状态在锁内。
+    ️ 锁纪律：验证（可能打 Prometheus）与推卡片（打飞书）**都不持锁**，只有改状态在锁内。
     本项目的硬约束是「锁只包 DB 读-判-写」（见 locks.py）：巡检每 30 秒跑一次，
     持锁打网络会把 webhook 的入库一起堵住 —— 而 webhook 被堵正是夜莺超时重试的根因。
     """
@@ -198,16 +198,16 @@ def _resolve_recovered(session: Session, now: datetime) -> tuple[int, int]:
 
 
 def _probe_recoveries(session: Session, now: datetime) -> tuple[int, int]:
-    """主动探测静默工单是否真的恢复（用户 2026-09-15 要求）。
+    """主动探测静默工单是否真的恢复。
 
-    为什么需要：人工处理完之后，故障是否好了不能靠"告警不来"猜（静默只是没消息），
+    用途：人工处理完之后，故障是否好了不能靠"告警不来"猜（静默只是没消息），
     夜莺也不一定发 is_recovered。所以对「告警已静默超过 recovery_probe_after_seconds」的工单，
     按 recovery_probe_seconds 的间隔主动查权威判据：
       recovered     → 关单 + 群里通报恢复卡（恢复卡不受每日封顶限制）
       not_recovered → 保持 OPEN，等次日 09:00 汇总
       unverified    → 保持 OPEN（拿不到判据就不下结论）
 
-    ⚠️ 触发条件是"静默"而不是"告警已过期(stale)"：夜莺重发周期是小时级、stale 窗口 2 小时，
+    ️ 触发条件是"静默"而不是"告警已过期(stale)"：夜莺重发周期是小时级、stale 窗口 2 小时，
     若等 stale 才探测，运维修好之后最长要 2 小时才有结论。按静默判（默认 5 分钟）
     可以让恢复通报在 ~10 分钟内到群里，而"静默但还没好"只会多花一次查询、不影响状态。
 
@@ -354,7 +354,7 @@ def run_sweep(session: Session, now: datetime | None = None) -> dict:
     summary = {"stale_alerts": stale}
     resolved, held = _resolve_recovered(session, now)
     summary.update({"incidents_resolved": resolved, "incidents_held": held})
-    # 主动探测：人工处理完之后由我们自己发现"好了没有"，不等夜莺恢复信号（用户 2026-09-15 要求）
+    # 主动探测：人工处理完之后由我们自己发现"好了没有"，不等夜莺恢复信号
     probed, probed_held = _probe_recoveries(session, now)
     summary.update({"probe_resolved": probed, "probe_held": probed_held})
     summary["analysis_requeued"] = _retry_stale_analysis(session, now)

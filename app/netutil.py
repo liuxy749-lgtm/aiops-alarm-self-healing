@@ -20,7 +20,7 @@ def promql_string(value: str | None) -> str:
 
     必须同时转义反斜杠和双引号：
       · 只转义反斜杠 → 标签值里带 `"` 会截断字符串，查询语法错误（该条查询返空）
-      · 不转义反斜杠 → PromQL/Go 解析器可能报非法转义（实测踩过：re.escape 的 `\\.` 被拒）
+      · 不转义反斜杠 → PromQL/Go 解析器可能报非法转义（曾出现过：re.escape 的 `\\.` 被拒）
     顺序很重要：先反斜杠后双引号，否则会把刚加上的转义符再转一次。
     """
     return str(value or "").replace("\\", "\\\\").replace('"', '\\"')

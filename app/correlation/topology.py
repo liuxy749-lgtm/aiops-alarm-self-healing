@@ -29,7 +29,7 @@ class TopologyService:
 
         必须记在 session.info 上而不是实例属性：同一个 session 会被多个
         TopologyService 实例使用（富化里指标侧和 K8s API 侧各建一个），
-        实例级的集合去不了重。实测踩过：kube-state-metrics 与 K8s API 都会登记
+        实例级的集合去不了重。曾出现过：kube-state-metrics 与 K8s API 都会登记
         Pod RUNS_ON Node，autoflush=False 让 upsert 的 SELECT 看不到未 flush 的那条，
         结果重复 add，下一次 flush 撞 resource_relations 的唯一约束，
         整个事件处理失败（Can't operate on closed transaction inside context manager）。

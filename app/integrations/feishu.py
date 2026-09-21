@@ -200,7 +200,7 @@ def _alert_groups(alerts: list, max_classes: int = 8) -> tuple[str, int]:
 
 
 def _reason_text(reasons: list[str] | None) -> str | None:
-    """把关联原因翻译成运维能读的话：回答「为什么这些告警算同一个故障」。"""
+    """把关联原因翻译成运维能读的话：说明「这些告警算同一个故障」。"""
     if not reasons:
         return None
     seen: list[str] = []
@@ -412,7 +412,7 @@ def build_incident_card(
         kind, "🚨 新工单"
     )
     icon, label = name.split(" ", 1)
-    # 标题 = 告警等级 + 故障标题（用户 2026-09-14 要求：群里扫一眼就知道多严重、是什么故障，
+    # 标题 = 告警等级 + 故障标题（群里扫一眼就知道多严重、是什么故障，
     # 多台机器合并的工单也一样，不用点开才知道等级）
     title = f"{icon} {incident.severity or '未分级'} · {incident.title}"
     template = "green" if resolved else _SEVERITY_TEMPLATE.get(incident.severity or "", "orange")
@@ -654,9 +654,9 @@ def notify_digest(session: Session, incidents: list, now: datetime | None = None
 
 
 def _node_details(alerts: list, root_entity_id: str | None = None) -> tuple[str, int] | None:
-    """合并工单的「节点详情」：把每台机器的信息写全（用户 2026-09-14 要求）。
+    """合并工单的「节点详情」：把每台机器的信息写全。
 
-    为什么需要：一场"4 台 master 同时 NotReady"的故障会合并成一个工单，
+    用途：一场"4 台 master 同时 NotReady"的故障会合并成一个工单，
     但卡片上的「节点」字段只显示根因那台，看卡的人会以为只挂了一台。
     只有一台机器时返回 None（上面的「节点」字段已经够了，避免重复）。
     """

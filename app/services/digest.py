@@ -1,6 +1,6 @@
 """每日 09:00 的未恢复工单汇总。
 
-为什么要有这个：工单卡改成「每天每单最多一张」之后，一场四天没恢复的故障
+背景：工单卡改成「每天每单最多一张」之后，一场四天没恢复的故障
 在第二天起就彻底安静了 —— 没人推，也就没人想起来它还挂着。
 汇总卡把「还没好的都在这」每天早上说一次，是那条封顶规则的另一半。
 
@@ -59,7 +59,7 @@ def due(session: Session, now: datetime | None = None) -> bool:
         return False
     if already_sent_today(session, now):
         return False
-    # 只在有事时汇报（用户 2026-09-15 要求：未恢复的次日早上九点报一次）。
+    # 只在有事时汇报（未恢复的次日早上九点报一次）。
     # 没有未恢复工单就不发，避免每天一张"平安卡"变成新的噪声；
     # 想每天固定报到（心跳）时把 AIOPS_DAILY_DIGEST_ALWAYS 打开。
     if not settings.daily_digest_always and not queries.unresolved_incidents(session):

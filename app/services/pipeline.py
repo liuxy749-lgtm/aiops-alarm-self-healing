@@ -6,7 +6,7 @@
 副作用出锁（2026-09-11 落地）：
 webhook 只做 DB 短事务（raw 落盘 → 标准化 → 富化 → 指纹 → Alert/工单），
 随即返回 200；采集 / AI 诊断 / 飞书推送交给 app/services/worker.py 在后台执行。
-原因是实测：整链同步时 AI 诊断 10~13 秒会超过夜莺客户端超时（报
+原因是：整链同步时 AI 诊断 10~13 秒会超过夜莺客户端超时（报
 `context deadline exceeded` 并重试），且锁把 LLM 也包住会让告警风暴串行排队。
 AIOPS_INLINE_ANALYSIS=true 可退回同步执行（对照与回滚用）。
 """
@@ -63,7 +63,7 @@ class EventResult:
 # 飞书工单卡片
 # ----------------------------------------------------------------------
 def _correlation_reasons(session: Session, incident_id: str) -> list[str]:
-    """汇总关联原因，卡片上要能回答「为什么这些告警算同一个故障」。"""
+    """汇总关联原因，卡片上要能说明「这些告警算同一个故障」。"""
     from app.db.models import IncidentAlert
 
     reasons: list[str] = []
@@ -246,7 +246,7 @@ def already_notified(
     """飞书推送幂等：同一目标同一 kind 已成功推过就不再推。
 
     必须有这层硬保证：后台重试、进程重启后的启动补偿、同一条告警的重放，
-    都可能把同一张卡片推第二次（实测踩过：夜莺重试期间一次告警发出多张卡）。
+    都可能把同一张卡片推第二次（曾出现过：夜莺重试期间一次告警发出多张卡）。
     """
     query = select(FeishuMessage.id).where(FeishuMessage.kind == kind, FeishuMessage.ok.is_(True))
     if incident_id:
@@ -314,7 +314,7 @@ def analyze_incident_now(incident_id: str, kind: str) -> None:
 
     不持 PROCESS_LOCK（慢的都是网络 I/O，见 worker 模块说明）。
     session 用 WorkerSessionLocal（AUTOCOMMIT）：后台跨 HTTP 的长事务会持有读快照，
-    回写时与 webhook 抢写锁会直接报 database is locked（实测踩到）。
+    回写时与 webhook 抢写锁会直接报 database is locked（曾出现过：）。
     analysis_status 记录进度：失败落 analysis_error，重启后由 requeue_pending 续跑。
     """
     session = WorkerSessionLocal()
@@ -421,7 +421,7 @@ def _handle_firing(session: Session, norm, fingerprint: str) -> EventResult:
     else:
         # 关联引擎没找到候选，再按 fingerprint 兜一层：同类故障（同规则+同资源）
         # 复发时挂回原来那张工单，必要时复开。
-        # 没有这一层的后果实测过：一场 4 天没恢复的 master NotReady 因为中途被
+        # 没有这一层的后果过：一场 4 天没恢复的 master NotReady 因为中途被
         # 巡检判过恢复，每次复发都新建一张单，最后 9 张标题完全一样的 OPEN 工单。
         recurring = queries.incident_by_fingerprint(
             session, fingerprint, utcnow() - timedelta(hours=settings.incident_recurrence_hours)
@@ -538,11 +538,11 @@ def process_one(session: Session, payload: dict, raw_cache: dict[str, object] | 
 def process_items(session: Session, items: list[dict]) -> list[EventResult]:
     """逐条处理，**每条一个独立事务**。
 
-    为什么不是「整批一个事务 + savepoint 重试」（2026-09-14 丢告警后重做）：
+    不采用「整批一个事务 + savepoint 重试」的做法（2026-09-14 丢告警后重做）：
       · SQLite 在「事务里先读过、之后才写」时，若期间别的连接提交过写，会**立刻**报
         database is locked（SQLITE_BUSY_SNAPSHOT，busy_timeout 根本不参与）；
       · savepoint 回滚**不会换快照**，所以在外层事务里重试必然继续失败
-        （实测：同一请求 4 次重试全败，间隔正好等于我们的退避 50/100/150ms）；
+        （：同一请求 4 次重试全败，间隔正好等于我们的退避 50/100/150ms）；
       · 只有回滚最外层事务、重开一个事务，重试才可能成功。
     因此这里：每条独立提交（单条失败不会牵连已成功的条目）+ 失败回滚重开重试。
     """

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """补录工具：把 raw_events 归档里「有原文但没入库」的事件重新投回网关。
 
-为什么需要：Webhook 处理失败（如 database is locked）时，事件不会入库，
+用途：Webhook 处理失败（如 database is locked）时，事件不会入库，
 夜莺也不一定重投 → 这条告警就永久丢了（没工单、没诊断、没人知道）。
 但归档文件是先写文件的、**写失败不会回滚**，所以原文通常还在
 `data/raw_events/raw-events-YYYY-MM-DD.jsonl` 里，可以补录重放。

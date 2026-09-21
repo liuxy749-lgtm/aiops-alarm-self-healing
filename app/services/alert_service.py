@@ -111,7 +111,7 @@ def mark_resolved(session: Session, fingerprint: str, occurred_at: datetime, rea
 def reset_active_firing(session: Session, fingerprint: str, reason: str = "debug_reset") -> int:
     """调试用：把该指纹下活跃的 Alert 置为 RESOLVED，让下一次事件能新建 Alert。
 
-    为什么需要它：同一条测试告警在 15 分钟过期窗口内重复发送时，
+    用途：同一条测试告警在 15 分钟过期窗口内重复发送时，
     指纹相同 → 会被合并进已有 Alert（ALERT_UPDATED），不会产生新工单，
     联调时看不到完整链路。只在 AIOPS_DEBUG_SKIP_DEDUP 打开时调用。
     """

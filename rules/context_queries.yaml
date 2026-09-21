@@ -5,7 +5,7 @@
 #
 # 可用变量（缺失时整条查询跳过，避免查出全网数据）：
 #   $target     目标实例匹配值 = ip → hostname → 实体 id 依次兜底
-#               （实测很多裸机告警的 target_ident 是主机名而不是 IP，
+#               （很多裸机告警的 target_ident 是主机名而不是 IP，
 #                所以匹配 instance 一律用 $target，不要用 $ip）
 #   $node       alert.node（节点类告警会兜底成实体 id）
 #   $hostname   alert.hostname
@@ -46,7 +46,7 @@ queries:
   OOMKilled:
     - 'kube_pod_info{namespace="$namespace",pod="$pod"}'
     - 'kube_pod_container_status_last_terminated_reason{namespace="$namespace",pod="$pod",reason="OOMKilled"}'
-    # 实测：容器内存指标在本环境是记录规则名（带 namespace: 前缀），
+    # ：容器内存指标在本环境是记录规则名（带 namespace: 前缀），
     # 直接查 container_memory_working_set_bytes 返回空
     - 'node_namespace_pod_container:container_memory_working_set_bytes{namespace="$namespace",pod="$pod"}'
   GPUXidError:
@@ -60,7 +60,7 @@ queries:
     - 'node_filesystem_avail_bytes{instance=~"$target.*"}'
     - 'node_filesystem_size_bytes{instance=~"$target.*"}'
     - 'node_disk_io_time_seconds_total{instance=~"$target.*"}'
-  # 实测：生产环境真实存在该告警类型（磁盘 IO 繁忙）
+  # ：生产环境真实存在该告警类型（磁盘 IO 繁忙）
   NodeDiskIoBusy:
     - 'rate(node_disk_io_time_seconds_total{instance=~"$target.*"}[5m])'
     - 'rate(node_disk_io_time_weighted_seconds_total{instance=~"$target.*"}[5m])'
@@ -71,7 +71,7 @@ queries:
     - 'rate(node_network_receive_drop_total{instance=~"$target.*"}[5m])'
   NCCLTimeout:
     - 'rate(node_network_receive_drop_total{instance=~"$target.*"}[5m])'
-  # 实测：生产环境真实存在这个告警类型，原来落到 default 只查了 up，拿不到重传趋势
+  # ：生产环境真实存在这个告警类型，原来落到 default 只查了 up，拿不到重传趋势
   NodeTcpRetransHigh:
     - 'up{instance=~"$target.*"}'
     - 'rate(node_netstat_Tcp_RetransSegs{instance=~"$target.*"}[5m])'

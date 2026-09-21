@@ -80,7 +80,7 @@
 <div class="wrap">
 
 <header class="hero">
-  <h1>🚨 半夜机器生病了，谁来看病？</h1>
+  <h1> 半夜机器生病了，谁来看病？</h1>
   <p class="big">这份网页用最简单的话，讲清我们这套「告警自动处理系统」现在是怎么运转的。</p>
   <p>不用懂技术也能看懂：把每个部件想成一个人，看看他们怎么接力。</p>
   <div>
@@ -94,7 +94,7 @@
 <div class="grid g3">
 
   <div class="card role">
-    <div class="emoji">🔔</div>
+    <div class="emoji"></div>
     <div><b>夜莺（值班保安）</b>
       <small>一直在盯着机器。哪台机器不对劲，它第一个发现，然后马上打电话通知别人。</small>
       <div class="tag">真实名字：Nightingale 监控告警系统</div>
@@ -102,7 +102,7 @@
   </div>
 
   <div class="card role">
-    <div class="emoji">🎧</div>
+    <div class="emoji"></div>
     <div><b>网关（接线员）</b>
       <small>接到电话第一件事：先在记事本上写下来，然后立刻说“收到！”，绝不让对方一直等着。</small>
       <div class="tag">真实名字：aiops-gateway（我们自己的程序）</div>
@@ -110,7 +110,7 @@
   </div>
 
   <div class="card role">
-    <div class="emoji">📒</div>
+    <div class="emoji"></div>
     <div><b>记事本（档案柜）</b>
       <small>所有来电原文都一字不改地留着，以后复查、学习都靠它。</small>
       <div class="tag">真实名字：raw_events 文件 + SQLite 数据库</div>
@@ -118,7 +118,7 @@
   </div>
 
   <div class="card role">
-    <div class="emoji">🔍</div>
+    <div class="emoji"></div>
     <div><b>侦探（关联警察）</b>
       <small>接到很多电话时会想：这些是不是同一件事？同一台机器、时间又接近，就是同一场病，合成一张单子。</small>
       <div class="tag">真实名字：Correlation Engine 关联引擎</div>
@@ -126,7 +126,7 @@
   </div>
 
   <div class="card role">
-    <div class="emoji">📷</div>
+    <div class="emoji"></div>
     <div><b>取证员（跑现场）</b>
       <small>去看机器最近的“体温曲线”，再翻翻机器的台账（哪些程序在跑、状态正不正常）。</small>
       <div class="tag">真实名字：Prometheus 指标 + K8s 只读接口</div>
@@ -134,7 +134,7 @@
   </div>
 
   <div class="card role">
-    <div class="emoji">👩‍⚕️</div>
+    <div class="emoji">‍</div>
     <div><b>医生（AI）</b>
       <small>拿着证据判断“最可能是什么病”，并且必须说清：证据是哪几条、有几成把握。</small>
       <div class="tag">真实名字：DeepSeek 大模型</div>
@@ -142,7 +142,7 @@
   </div>
 
   <div class="card role">
-    <div class="emoji">📢</div>
+    <div class="emoji"></div>
     <div><b>大喇叭（群里喊人）</b>
       <small>把结论贴到工作群里，让该处理的人一眼看懂发生了什么。</small>
       <div class="tag">真实名字：飞书群机器人</div>
@@ -150,7 +150,7 @@
   </div>
 
   <div class="card role">
-    <div class="emoji">🧑‍🔧</div>
+    <div class="emoji">‍</div>
     <div><b>助手（后台慢工）</b>
       <small>接线员说完“收到”就把活儿交给助手：跑现场、请医生、发通知，都由助手慢慢做。</small>
       <div class="tag">真实名字：后台 worker（副作用出锁）</div>
@@ -182,7 +182,7 @@
 
   <div class="step why">
     <h3>第 4 步：同样的话说两遍，只算一次</h3>
-    <p><b>为什么要这样：</b>保安有时会重复打同一个电话（网络重试、告警反复触发）。如果每次都当真，群里就会被同一条消息刷屏。所以每通电话都有一个“指纹”，一样的指纹只处理一次。</p>
+    <p><b>这样做的原因：</b>保安有时会重复打同一个电话（网络重试、告警反复触发）。如果每次都当真，群里就会被同一条消息刷屏。所以每通电话都有一个“指纹”，一样的指纹只处理一次。</p>
     <div class="real">真实动作：幂等键 = 夜莺 <code>hash + 状态 + 触发时间</code>；数据库还有唯一约束兜底，绝不重复建单</div>
   </div>
 
@@ -193,9 +193,9 @@
   </div>
 
   <div class="step kid">
-    <h3>🎉 第 6 步：接线员立刻说“收到！”（约 100 毫秒）</h3>
+    <h3> 第 6 步：接线员立刻说“收到！”（约 100 毫秒）</h3>
     <p>到这一步，接线员已经记录完了，他就马上回一句“收到”，然后腾出手去接下一个电话。<b>注意：他还没去看现场、还没请医生。</b></p>
-    <div class="real">真实动作：返回 HTTP 200，实测 87~124 毫秒（以前要 11~15 秒）</div>
+    <div class="real">真实动作：返回 HTTP 200， 87~124 毫秒（以前要 11~15 秒）</div>
   </div>
 
   <div class="step">
@@ -214,39 +214,39 @@
 
 <h2>三、一张图看懂整条流水线</h2>
 <div class="flow">
-  <div class="node n1"><div class="ico">🔔</div><b>夜莺发现异常</b><small>打电话</small></div>
-  <div class="arrow">➜</div>
-  <div class="node n2"><div class="ico">🎧</div><b>网关记录+看懂</b><small>记原文 / 整理 / 去重</small></div>
-  <div class="arrow">➜</div>
-  <div class="node n3"><div class="ico">🔍</div><b>合成工单</b><small>相关的算一件事</small></div>
-  <div class="arrow">➜</div>
-  <div class="node n1"><div class="ico">✅</div><b>马上说“收到”</b><small>~100 毫秒</small></div>
+  <div class="node n1"><div class="ico"></div><b>夜莺发现异常</b><small>打电话</small></div>
+  <div class="arrow"></div>
+  <div class="node n2"><div class="ico"></div><b>网关记录+看懂</b><small>记原文 / 整理 / 去重</small></div>
+  <div class="arrow"></div>
+  <div class="node n3"><div class="ico"></div><b>合成工单</b><small>相关的算一件事</small></div>
+  <div class="arrow"></div>
+  <div class="node n1"><div class="ico"></div><b>马上说“收到”</b><small>~100 毫秒</small></div>
 </div>
 <div class="flow">
-  <div class="node n4"><div class="ico">🧑‍🔧</div><b>助手接手（后台）</b><small>这时接线员已经去接下一通电话了</small></div>
-  <div class="arrow">➜</div>
-  <div class="node n4"><div class="ico">📷</div><b>取证</b><small>指标曲线 + K8s 台账</small></div>
-  <div class="arrow">➜</div>
-  <div class="node n5"><div class="ico">👩‍⚕️</div><b>AI 诊断</b><small>5~16 秒</small></div>
-  <div class="arrow">➜</div>
-  <div class="node n5"><div class="ico">📢</div><b>群里出卡片</b><small>约 10~15 秒后</small></div>
+  <div class="node n4"><div class="ico">‍</div><b>助手接手（后台）</b><small>这时接线员已经去接下一通电话了</small></div>
+  <div class="arrow"></div>
+  <div class="node n4"><div class="ico"></div><b>取证</b><small>指标曲线 + K8s 台账</small></div>
+  <div class="arrow"></div>
+  <div class="node n5"><div class="ico">‍</div><b>AI 诊断</b><small>5~16 秒</small></div>
+  <div class="arrow"></div>
+  <div class="node n5"><div class="ico"></div><b>群里出卡片</b><small>约 10~15 秒后</small></div>
 </div>
 
-<h2>四、为什么第 6 步要“先说收到、再慢慢干活”？</h2>
+<h2>四、第 6 步为何“先说收到、再慢慢干活”？</h2>
 <div class="warn">
-  <h3 style="margin-top:0">❌ 以前的做法（会出问题）</h3>
+  <h3 style="margin-top:0"> 以前的做法（会出问题）</h3>
   <p>接线员接到电话后，<b>一直拿着话筒不吭声</b>：先跑现场、再请医生、再把结论写好，整整 11~15 秒才说“收到”。</p>
   <p>打电话的保安等不及了，心想「是不是没人接？」，于是挂掉重打，打不通又重打……结果同一起故障被当成新故障，建了好几张单子、群里刷了好几遍。</p>
   <p class="real">真实现象：夜莺报 <code>context deadline exceeded (Client.Timeout exceeded while awaiting headers)</code>，但群里其实收到了卡片 —— 因为我们的活儿干完了，只是回话太慢。</p>
 </div>
 <div class="ok">
-  <h3 style="margin-top:0">✅ 现在的做法</h3>
+  <h3 style="margin-top:0"> 现在的做法</h3>
   <p>接线员<b>先说“收到”（约 100 毫秒）</b>，再把活儿交给助手，自己去接下一个电话。等医生看完病，结果再单独通知。</p>
   <p><b>好处：</b>保安不再重复打电话；就算同时来一百个电话，也不会一个卡住全部（以前第一次超时会把后面所有告警都堵住）。</p>
 </div>
 
 <details>
-  <summary>🔧 给好奇的大人：这一改动在程序里是怎么做的？</summary>
+  <summary> 给好奇的大人：这一改动在程序里是怎么做的？</summary>
   <ul>
     <li>网络请求里只做“数据库短事务”：<code>存原文 → 整理 → 提高等级/去重 → 建工单</code>，全部是毫秒级动作。</li>
     <li>“取证 + AI + 通知”被放进后台单线程队列（<code>app/services/worker.py</code>），不再占用那个网络请求。</li>
@@ -259,14 +259,14 @@
 <h2>五、每一站的“真实身份”</h2>
 <table>
   <tr><th>小朋友看到的</th><th>实际是什么</th><th>地址 / 名字</th></tr>
-  <tr><td>🔔 值班保安</td><td>夜莺监控告警系统（n9e v8.5.1）</td><td><code>192.0.2.250</code>，通过 HTTP 回调把告警发给我们</td></tr>
-  <tr><td>🎧 接线员</td><td>我们自己的网关程序（单副本）</td><td><code>192.0.2.115:8701</code></td></tr>
-  <tr><td>📒 记事本</td><td>原始告警文件 + SQLite 数据库</td><td><code>data/raw_events/*.jsonl</code>、<code>data/aiops.db</code></td></tr>
-  <tr><td>📷 体温曲线</td><td>Prometheus 查询接口（只读）</td><td><code>http://192.0.2.13:9090</code>（dx0 集群）</td></tr>
-  <tr><td>📋 机器台账</td><td>K8s 只读接口（只许看，不许改）</td><td><code>https://192.0.2.66:6443</code>，账号 <code>aiops-readonly</code></td></tr>
-  <tr><td>👩‍⚕️ 医生</td><td>DeepSeek 大模型</td><td>模型 <code>deepseek-v4-flash</code></td></tr>
-  <tr><td>📢 大喇叭</td><td>飞书群机器人</td><td>工单卡片推到一个群，每条告警的简报推到另一个通道</td></tr>
-  <tr><td>🧑‍🔧 助手</td><td>后台工作线程</td><td>同进程内的单线程队列（二期会换成更可靠的数据库队列）</td></tr>
+  <tr><td> 值班保安</td><td>夜莺监控告警系统（n9e v8.5.1）</td><td><code>192.0.2.250</code>，通过 HTTP 回调把告警发给我们</td></tr>
+  <tr><td> 接线员</td><td>我们自己的网关程序（单副本）</td><td><code>192.0.2.115:8701</code></td></tr>
+  <tr><td> 记事本</td><td>原始告警文件 + SQLite 数据库</td><td><code>data/raw_events/*.jsonl</code>、<code>data/aiops.db</code></td></tr>
+  <tr><td> 体温曲线</td><td>Prometheus 查询接口（只读）</td><td><code>http://192.0.2.13:9090</code>（dx0 集群）</td></tr>
+  <tr><td> 机器台账</td><td>K8s 只读接口（只许看，不许改）</td><td><code>https://192.0.2.66:6443</code>，账号 <code>aiops-readonly</code></td></tr>
+  <tr><td>‍ 医生</td><td>DeepSeek 大模型</td><td>模型 <code>deepseek-v4-flash</code></td></tr>
+  <tr><td> 大喇叭</td><td>飞书群机器人</td><td>工单卡片推到一个群，每条告警的简报推到另一个通道</td></tr>
+  <tr><td>‍ 助手</td><td>后台工作线程</td><td>同进程内的单线程队列（二期会换成更可靠的数据库队列）</td></tr>
 </table>
 
 <h2>六、现在的成绩单</h2>
@@ -280,7 +280,7 @@
     </ul>
   </div>
   <div class="card">
-    <h3 style="margin-top:0">🧪 靠谱程度</h3>
+    <h3 style="margin-top:0"> 靠谱程度</h3>
     <ul>
       <li>42 个自动化测试全绿</li>
       <li>同一告警重复送 100 次 → 仍然只有 1 张单子</li>
@@ -288,7 +288,7 @@
     </ul>
   </div>
   <div class="card">
-    <h3 style="margin-top:0">🛡 安全边界</h3>
+    <h3 style="margin-top:0"> 安全边界</h3>
     <ul>
       <li>只许<b>看</b>集群，不许改（连读密码都不给）</li>
       <li>资产名字在出网前先换成代号，回来再换回真名</li>
@@ -296,7 +296,7 @@
     </ul>
   </div>
   <div class="card">
-    <h3 style="margin-top:0">📦 记性</h3>
+    <h3 style="margin-top:0"> 记性</h3>
     <ul>
       <li>原始告警留 30 天，工单/事件留 90 天</li>
       <li>每次诊断的“证据 + 置信度”都存库，可复查</li>

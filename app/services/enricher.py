@@ -52,7 +52,7 @@ def _k8s_metric_facts(session: Session, norm: NormalizedEvent, prometheus) -> di
         if node_name:
             info = _metric_labels(prometheus.instant(f'kube_node_info{{node="{promql_string(node_name)}"}}'))
         if not info and entity.ip:
-            # 告警的 target_ident 经常直接是 IP（实测 192.0.2.46 这种），
+            # 告警的 target_ident 经常直接是 IP（ 192.0.2.46 这种），
             # 用 internal_ip 反查节点名，才能拿到 kubelet 版本/OS/主机名等事实，
             # 也才能让「同节点」关联在 IP 形态下正常工作。
             info = _metric_labels(
@@ -72,7 +72,7 @@ def _k8s_metric_facts(session: Session, norm: NormalizedEvent, prometheus) -> di
             entity.hostname = entity.hostname or node_name
         facts = {key: info[key] for key in _NODE_INFO_FIELDS if info.get(key)}
         # 节点 IP 以 kube_node_info 的 internal_ip 为准 —— 它就是这个节点的地址。
-        # 告警自带的 ip 可能是监控组件地址（实测 kube-state-metrics 的 198.51.100.210，
+        # 告警自带的 ip 可能是监控组件地址（kube-state-metrics 的 198.51.100.210，
         # 4 台节点共用），拿它做恢复验证会永远判「已恢复」。
         authoritative_ip = facts.get("internal_ip")
         if authoritative_ip and entity.ip != authoritative_ip:
@@ -232,7 +232,7 @@ def _enrich_from_kubernetes(session: Session, norm: NormalizedEvent, k8s) -> dic
             topology.upsert("node", node_name, "MEMBER_OF", "cluster", norm.scope.cluster)
         # 只取节点事实。该节点上的 Pod 列表与 events 不在 webhook 路径里查：
         # 这两个调用是「证据」而不是「关联所需」，后台的 context_collector 会重新取一遍，
-        # 放在请求里等于每次告警多打两次 K8s API（实测同节点风暴下纯浪费）。
+        # 放在请求里等于每次告警多打两次 K8s API（同节点风暴下纯浪费）。
         return {"node": facts}
 
     return {}

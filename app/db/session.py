@@ -31,10 +31,10 @@ def _sqlite_pragmas(dbapi_connection, _record) -> None:  # pragma: no cover - �
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False, future=True)
 
 # 后台任务专用会话：AUTOCOMMIT（每条语句立即提交）。
-# 为什么：后台要跨 HTTP（Prometheus/K8s/LLM，10 余秒）干活，如果放在一个事务里，
+# 原因：后台要跨 HTTP（Prometheus/K8s/LLM，10 余秒）干活，如果放在一个事务里，
 # 这个连接会一直持有读快照，回写时升级成写锁会与 webhook 的写冲突，
 # 而 SQLite 在「已读过的连接升级写」场景下会**立即**返回 database is locked
-# （busy_timeout 不生效），把 webhook 的告警入库打挂（实测踩到过）。
+# （busy_timeout 不生效），把 webhook 的告警入库打挂（曾出现过：过）。
 # 后台任务每一步都是独立语句，不需要跨语句原子性；进度由 analysis_status 记录。
 # 注意：isolation_level 是连接/引擎级选项，只能通过 execution_options 传，不能给 sessionmaker。
 WorkerSessionLocal = sessionmaker(

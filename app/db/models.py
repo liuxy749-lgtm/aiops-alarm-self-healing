@@ -2,7 +2,7 @@
 
 设计要点（与设计文档的差异都写在这里）：
 - raw_events：落库的是元数据 + 完整原始 payload 副本，正文另外原子写入
-  本地 JSONL 归档文件（用户决定一期不上对象存储）。
+  本地 JSONL 归档文件（一期不上对象存储）。
 - alerts：用「部分唯一索引」保证同一 fingerprint 同时只存在一条 FIRING 记录，
   这是去重的硬约束，不依赖应用层的先查后建。
 - incidents：多出 node / root_alert_id / recovery_deadline / merged_into，
@@ -170,7 +170,7 @@ class Incident(Base):
     ai_diagnosis: Mapped[dict | None] = mapped_column(JSON)
 
     # --- 副作用出锁：采集/诊断/推送在后台执行，这几列记录进度 ---
-    # 为什么放 DB 而不是内存队列：进程重启后要把在途工单重新入队，
+    # 放数据库而非内存队列的理由：进程重启后要把在途工单重新入队，
     # 否则重启期间的告警会停在「只有工单、没有诊断」的状态且无人发现。
     analysis_status: Mapped[str] = mapped_column(String(16), default="NONE", index=True)  # NONE/PENDING/RUNNING/DONE/FAILED
     analysis_kind: Mapped[str | None] = mapped_column(String(32))

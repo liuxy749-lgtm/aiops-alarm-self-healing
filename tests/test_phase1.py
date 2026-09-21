@@ -181,7 +181,7 @@ def test_case3_two_nodes_stay_separate(client):
 # Case 4：Pod 与 Node 关联（拓扑 + 因果）
 # ----------------------------------------------------------------------
 def test_case3b_same_alert_chain_on_different_nodes_stays_separate(client):
-    """真实数据实测踩到的坑：NodeNotReady(node01) 不得吞掉 KubeletDown(node02)。
+    """真实数据曾出现过：的坑：NodeNotReady(node01) 不得吞掉 KubeletDown(node02)。
 
     force_link 与因果规则都声明了 same_node 语义，跨节点必须拒绝 ——
     否则同集群里任何一台节点的 KubeletDown 都会被并进别人那条链。
@@ -289,7 +289,7 @@ def test_stale_alert_does_not_auto_resolve_incident(client, session):
     """告警「不再来」不等于恢复：stale 过期后工单保持 OPEN、不推恢复卡（2026-09-14 修正）。
 
     修正前的行为是：stale → RECOVERING → 观察期 → 用 up{} 判「已恢复」并推卡，
-    实测把几周不可达的僵尸节点每小时误判一次恢复。现在只有夜莺显式恢复信号才进恢复流程。
+    把几周不可达的僵尸节点每小时误判一次恢复。现在只有夜莺显式恢复信号才进恢复流程。
     """
     from app.services.sweeper import run_sweep
 
@@ -343,7 +343,7 @@ def test_explicit_nightingale_recovery_resolves_incident(client, session):
 def test_storm_sends_exactly_one_incident_card(client, session):
     """8 条告警 → 工单通道只发 1 张卡片；事件通道按 Alert 粒度发 8 条。
 
-    实测踩过：每次关联告警都推一张卡片 → 节点故障风暴往群里刷 8 张，
+    曾出现过：每次关联告警都推一张卡片 → 节点故障风暴往群里刷 8 张，
     比原来的夜莺告警还吵。工单卡片只在「创建/根因变化/关闭」三个时机发。
     """
     send(client, payload("NodeNotReady", "node", "node01", seconds=0, node="node01"))
@@ -507,7 +507,7 @@ def test_health_and_metrics_endpoints(client):
 
 
 # ----------------------------------------------------------------------
-# 夜莺原生 Webhook 实测报文回归（n9e-host-01 真实推送的形状）
+# 夜莺原生 Webhook 报文回归（n9e-host-01 真实推送的形状）
 # ----------------------------------------------------------------------
 def n9e_native(*, recovered: bool = False, trigger_time: int = 1789000000) -> dict:
     """照抄夜莺 `{{ jsonMarshal $event }}` 实际发出来的结构。
@@ -664,7 +664,7 @@ def test_mask_unmask_roundtrip_keeps_card_readable():
 def test_mask_keeps_entity_type_prefix():
     """实体类型前缀不是敏感信息，掩掉它会让模型以为实体名是占位符。
 
-    实测踩过：模型在建议里写「entity 中 node 为占位形式，需人工确认真实节点名」，
+    曾出现过：模型在建议里写「entity 中 node 为占位形式，需人工确认真实节点名」，
     因为出网 prompt 里写成了 <host-1>:<host-2>。
     """
     from app.integrations.deepseek import _mask
@@ -696,7 +696,7 @@ def test_context_substitution_falls_back_to_hostname():
 
 
 def test_instance_regex_covers_hostname_and_ip():
-    """节点名与 IP 两种 target 注册形态都要能命中（实测 cluster02 两种都有）。"""
+    """节点名与 IP 两种 target 注册形态都要能命中（cluster02 两种都有）。"""
     import re as _re
 
     from app.services.context_collector import _instance_regex, _substitute
@@ -787,7 +787,7 @@ def test_context_collection_failure_is_recorded(client):
 def test_mask_keeps_metric_and_component_names():
     """指标名/组件名/规则名不是资产，不能被掩。
 
-    实测踩过：NodeDiskIoBusy 被掩成 <host-1>、node-exporter 被掩成 <host-2>、
+    曾出现过：NodeDiskIoBusy 被掩成 <host-1>、node-exporter 被掩成 <host-2>、
     整个 prompt 出现 200 处 <host->，模型只能写「指标名被掩码，无法确认是哪个计数器」。
     """
     from app.integrations.deepseek import _mask
@@ -833,7 +833,7 @@ def test_mask_keeps_metric_and_component_names():
 def test_topology_upsert_is_idempotent_within_session(session):
     """同一 session 内重复登记同一关系不能重复插入。
 
-    实测踩过：注入 K8s API 后，kube-state-metrics 富化与 K8s API 富化都会登记
+    曾出现过：注入 K8s API 后，kube-state-metrics 富化与 K8s API 富化都会登记
     Pod RUNS_ON Node / OWNED_BY，而 autoflush=False 让 upsert 的前置 SELECT
     看不到尚未 flush 的那条 → 重复 add → 下一次 flush 撞 resource_relations
     的唯一约束 → 整个事件处理失败。
@@ -852,7 +852,7 @@ def test_topology_upsert_is_idempotent_within_session(session):
 def test_mask_keeps_business_ids():
     """工单号/告警号不是资产，不能被掩成 <host-N>。
 
-    实测踩过：INC-20260911-001 / ALT-<hex>-<ts> 正好命中「多段连字符 + 含数字」规则，
+    曾出现过：INC-20260911-001 / ALT-<hex>-<ts> 正好命中「多段连字符 + 含数字」规则，
     被当成主机名掩掉，模型无法引用具体对象、还占用了 host 计数。
     """
     from app.integrations.deepseek import _mask
@@ -900,7 +900,7 @@ def test_incident_card_is_sent_once(client):
 def test_worker_coalesces_requests_into_latest_kind(monkeypatch):
     """同一工单在跑期间来的新请求不能被静默丢弃：合并成「最新 kind」，跑完补一次。
 
-    实测踩过：分析还在跑时人工点 /analyze，请求被直接丢掉（接口却返回 202），
+    曾出现过：分析还在跑时人工点 /analyze，请求被直接丢掉（接口却返回 202），
     工单状态随后被写成 DONE，sweeper 也不会重排 → 人工重跑永久失效。
     """
     from app.services import worker
@@ -952,7 +952,7 @@ def test_clip_truncates_metric_series():
 def test_locked_event_retry_rolls_back_and_recovers(client, monkeypatch):
     """database is locked 必须「回滚最外层事务再重试」才有效。
 
-    实测背景（2026-09-14 丢了一条告警）：savepoint 内层重试不会换快照，
+    背景（2026-09-14 丢了一条告警）：savepoint 内层重试不会换快照，
     同一请求 4 次重试全败 → 事件永久丢失。这里模拟第一次抛 locked、第二次成功。
     """
     from sqlalchemy.exc import OperationalError
@@ -1089,7 +1089,7 @@ def test_dry_run_not_counted_as_sent(session):
 def test_node_ip_is_corrected_to_internal_ip():
     """节点 IP 必须以 kube_node_info.internal_ip 为准，覆盖采集端地址。
 
-    实测（2026-09-14）：节点告警来自 kube-state-metrics，告警里的 ip 是 198.51.100.210
+    2026-09-14）：节点告警来自 kube-state-metrics，告警里的 ip 是 198.51.100.210
     （4 台节点共用），如果不纠正，恢复验证会拿这个永远 up=1 的地址判「已恢复」。
     """
     from app.db.session import SessionLocal, init_db
@@ -1198,7 +1198,7 @@ def test_verify_recovery_requires_real_evidence(monkeypatch, session):
 
 
 def test_incident_card_title_and_node_details():
-    """合并工单的卡片：标题=告警等级+故障标题；节点详情写全所有机器（用户 2026-09-14 要求）。"""
+    """合并工单的卡片：标题=告警等级+故障标题；节点详情写全所有机器。"""
     import json as _json
     from types import SimpleNamespace
 
@@ -1233,7 +1233,7 @@ def test_incident_card_title_and_node_details():
     assert title.startswith("🚨 P2 · "), f"标题应为「等级 + 故障标题」，实际: {title}"
     assert "中心集群 4 台 A100 master 节点同一时刻 NotReady" in title
     assert "节点详情" in text and "（4 台）" in text
-    # 跳转按钮：卡片要能一键打开 Web 工单页（用户 2026-09-15 要求）
+    # 跳转按钮：卡片要能一键打开 Web 工单页
     buttons = [
         action
         for element in card["card"]["elements"]
@@ -1255,7 +1255,7 @@ def test_incident_card_title_and_node_details():
 
 
 def test_ui_incidents_page_lists_and_expands(client):
-    """Web 工单页（用户 2026-09-15 要求）：打开就是列表，点一下就地展开详情；单工单页自动展开。"""
+    """Web 工单页：打开就是列表，点一下就地展开详情；单工单页自动展开。"""
     send(client, payload("NodeNotReady", "node", "node01", seconds=0, node="node01"))
     incident_id = get_incidents(client)[0]["incident_id"]
 
@@ -1292,7 +1292,7 @@ def test_ui_page_is_read_only(client):
 def test_incident_id_never_reuses_a_notified_number(client, session):
     """工单号必须单调递增：删掉工单后也不能复用号段，否则撞上飞书留档会让新卡被静默压掉。
 
-    2026-09-15 实测：清理测试单后号段复用 → already_notified 误判 → 用户手动触发的
+    清理测试单后号段复用 → already_notified 误判 → 人工触发的
     GPU XID 告警建单时卡片没发出去。
     """
     from sqlalchemy import delete as sql_delete
@@ -1327,7 +1327,7 @@ def test_incident_id_never_reuses_a_notified_number(client, session):
 def test_recovery_up_query_matches_real_instance(monkeypatch, session):
     """up{} 兜底判据必须能匹配真实 instance（PromQL 的 =~ 两端自动锚定，写成 "^IP:" 永远查不到）。
 
-    2026-09-16 实测踩到：GPU XID 工单因这条查询永远返回 0 条序列 → 一直 unverified → 永不自动关单。
+    曾出现过：GPU XID 工单因这条查询永远返回 0 条序列 → 一直 unverified → 永不自动关单。
     """
     from app.db.models import Alert, Incident, IncidentAlert
     from app.services import sweeper
@@ -1375,7 +1375,7 @@ def test_recovery_up_query_matches_real_instance(monkeypatch, session):
 def test_gpu_alert_lifts_node_from_dcgm_tags():
     """DCGM 类告警的 tags 里有 Hostname/kubernetes_node → 必须抬成 node。
 
-    否则（2026-09-16 实测）：GPU XID 告警的 node 是空的 → 卡片「节点」列空白、
+    否则：GPU XID 告警的 node 是空的 → 卡片「节点」列空白、
     无法按机器聚合，而且 target_ident 会被当成带端口的假节点名。
     """
     from app.services import normalizer
@@ -1457,7 +1457,7 @@ def test_non_node_entity_uses_exporter_up_not_node_ready(monkeypatch, session):
 
 
 def test_k8s_facts_resolve_node_by_internal_ip():
-    """告警实体是 IP 时，要用 internal_ip 反查节点名（实测 192.0.2.46 这种）。"""
+    """告警实体是 IP 时，要用 internal_ip 反查节点名（192.0.2.46 这种）。"""
     from app.db.session import SessionLocal, init_db
     from app.models.schemas import Entity, NormalizedEvent, Scope
     from app.services.enricher import _k8s_metric_facts
@@ -1589,7 +1589,7 @@ def test_sweeper_requeues_stuck_analysis(client, monkeypatch, session):
 def test_context_queries_default_fallback_is_reachable():
     """兜底模板必须真的能被读到。
 
-    实测踩过：`default:` 写在 yaml 顶层，而 rules.py 只读 `queries:` 段，
+    曾出现过：`default:` 写在 yaml 顶层，而 rules.py 只读 `queries:` 段，
     导致没有专属模板的告警类型 queries=0、证据里什么都没有。
     """
     from app.correlation.rules import get_rules
@@ -1796,7 +1796,7 @@ def test_digest_failure_is_retried_same_day():
 
 
 # ----------------------------------------------------------------------
-# 主动恢复探测：人工处理完之后由系统自己发现"好了没有"（用户 2026-09-15 要求）
+# 主动恢复探测：人工处理完之后由系统自己发现"好了没有"
 # ----------------------------------------------------------------------
 class _FakeProbePrometheus:
     """按需返回节点 Ready 条件与 up{} 结果，并记录被查了什么。"""

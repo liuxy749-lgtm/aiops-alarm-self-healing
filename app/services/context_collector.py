@@ -70,7 +70,7 @@ def _substitute(query: str, alert: Alert, instance_re: str | None = None) -> str
     """把模板变量替换成实际值。
 
     `$target` 是"目标实例匹配值"：优先用解析出来的 instance 正则，
-    其次 ip → hostname → 实体 id 兜底。实测很多告警的 target_ident 是主机名，
+    其次 ip → hostname → 实体 id 兜底。很多告警的 target_ident 是主机名，
     只用 $ip 会让整条查询被跳过（queries=0，证据里什么都没有）。
     """
     raw_target = instance_re or alert.ip or alert.hostname or alert.entity_id or alert.node or ""
@@ -209,7 +209,7 @@ def collect(session: Session, incident: Incident) -> dict:
     prometheus = _prometheus_evidence(incident, alerts)
     kubernetes = _kubernetes_evidence(incident, alerts)
     # 时间一律用**北京时间**喂给模型：卡片字段显示的是 +08:00，模型若按 UTC ISO 复述，
-    # 同一张卡里会出现两个差 8 小时的时间（用户 2026-09-14 反馈）。
+    # 同一张卡里会出现两个差 8 小时的时间。
     context = {
         "time_zone": "Asia/Shanghai (+08:00)",
         "incident": {

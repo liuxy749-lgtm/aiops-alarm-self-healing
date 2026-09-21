@@ -1,6 +1,6 @@
 """标准化：把夜莺 payload 转成统一事件模型。
 
-夜莺侧会做格式化（用户决定），所以这里的主要职责变成「校验 + 兜底映射」：
+夜莺侧会做格式化，所以这里的主要职责变成「校验 + 兜底映射」：
 - 已格式化的 payload 走主路径；
 - 夜莺原生 payload（rule_name/tags 或 events 数组）走兼容映射，方便灰度期双跑；
 - 缺关键字段（alertname / 无法判定的 status）直接报错，绝不静默写入脏数据。
@@ -26,7 +26,7 @@ from app.models.schemas import (
 from app.timeutil import utcnow
 
 # 采集端是「集群级组件」的 job：它的 instance 是组件自身地址，不代表告警对象。
-# 实测（2026-09-14）：kube_node_status_condition 经 kube-state-metrics 抓取，
+# 2026-09-14）：kube_node_status_condition 经 kube-state-metrics 抓取，
 # instance=198.51.100.210:8080，4 台不同 master 的告警共用同一个 IP
 # → 既污染实体 IP，又让恢复验证永远查到 up=1（假恢复）。
 _CLUSTER_SCOPED_JOBS = {
@@ -95,9 +95,9 @@ def resolve_status(payload: dict, parsed: NightingalePayload | None = None) -> s
 
     优先级：能识别的显式 status > 夜莺的 is_recovered > 默认 firing。
 
-    ⚠️ 夜莺 AlertCurEvent 里有个 `status` 字段，但它是 `Status int` 的内部瞬时字段
-    （实测值 0），**不是告警状态**。原来无条件拿它当状态解析，会抛 ValueError
-    把整条事件判失败（线上实测 422）。所以「认得出来才用」，认不出来就退回 is_recovered。
+    ️ 夜莺 AlertCurEvent 里有个 `status` 字段，但它是 `Status int` 的内部瞬时字段
+    （值 0），**不是告警状态**。原来无条件拿它当状态解析，会抛 ValueError
+    把整条事件判失败（线上曾出现 422）。所以「认得出来才用」，认不出来就退回 is_recovered。
     """
     candidates: list[Any] = []
     if parsed is not None:
@@ -221,9 +221,9 @@ def _infer_entity_type(alertname: str, labels: dict[str, Any], has_node: bool) -
 def _build_entity(parsed: NightingalePayload, labels: dict[str, Any], alertname: str) -> Entity:
     raw_entity = parsed.entity or {}
     # 节点标识优先级：payload 显式字段 → 告警标签里的节点字段 → target_ident/hostname 兜底。
-    # ⚠️ 标签里的节点名必须排在 parsed.hostname **之前**：夜莺很多规则的 hostname 其实是
+    # 标签里的节点名必须排在 parsed.hostname **之前**：夜莺很多规则的 hostname 其实是
     # target_ident(=instance，形如 "198.51.100.9:9400")，拿它当节点会得到"带端口的假节点名"。
-    # 实测（2026-09-16）：DCGM 的 nvidia-gpu-xid-error 告警 tags 里明明有
+    # 2026-09-16）：DCGM 的 nvidia-gpu-xid-error 告警 tags 里明明有
     # Hostname=bm-example-zone1-d-a100-40g-2-99，却因为优先取了 instance 而 node=None，
     # 导致卡片上「节点」空白、无法按机器聚合与关联。
     node = _to_text(
@@ -251,7 +251,7 @@ def _build_entity(parsed: NightingalePayload, labels: dict[str, Any], alertname:
     pod = _to_text(_pick(raw_entity.get("pod"), labels.get("pod")))
     namespace = _to_text(_pick(raw_entity.get("namespace"), parsed.namespace, labels.get("namespace")))
     # instance 只有在「采集端就是这个实体」时才能当实体 IP。
-    # 反例（2026-09-14 实测踩到）：节点告警来自 kube-state-metrics，instance=198.51.100.210:8080
+    # 反例：节点告警来自 kube-state-metrics，instance=198.51.100.210:8080
     # 是监控组件地址，4 台不同节点共用同一个值 → 恢复验证拿它去查 up{}，永远判「已恢复」。
     instance = labels.get("instance")
     instance_is_entity = str(labels.get("job") or "").strip().lower() not in _CLUSTER_SCOPED_JOBS
@@ -295,7 +295,7 @@ def _build_entity(parsed: NightingalePayload, labels: dict[str, Any], alertname:
     if not node_value and entity_type == "node" and entity_id:
         # 节点类告警至少把实体 id 当节点标识，否则「同节点」关联（same_physical_node）
         # 和 $node 查询替换全都无从判断。
-        # 实测：相当一部分告警的 target_ident 是主机名（如 bm-example-zone1-...）而不是 IP。
+        # ：相当一部分告警的 target_ident 是主机名（如 bm-example-zone1-...）而不是 IP。
         node_value = entity_id
 
     resolved_ip = None

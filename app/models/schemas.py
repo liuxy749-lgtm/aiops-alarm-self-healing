@@ -1,6 +1,6 @@
 """标准事件模型（Pydantic）。
 
-夜莺侧会做格式化（用户决定），所以这里既是「接收契约」，也是内部统一模型。
+夜莺侧会做格式化，所以这里既是「接收契约」，也是内部统一模型。
 校验失败必须报错，不能静默写入脏数据。
 """
 from __future__ import annotations
@@ -38,12 +38,12 @@ def _ensure_aware(value: datetime | None) -> datetime | None:
 def coerce_kv_map(value: Any) -> dict[str, Any]:
     """把夜莺的各种「标签」形态统一成 dict。
 
-    夜莺 AlertCurEvent 里同一个东西有好几种表示，实测都出现过：
+    夜莺 AlertCurEvent 里同一个东西有好几种表示，都出现过：
       tags          = ["k=v", "k2=v2"]   （TagsJSON []string，json tag 是 tags）
       tags_map      = {"k": "v"}         （TagsMap）
       original_tags = ["k=v", ...]
       annotations   = {"summary": "..."}（或同款数组形态）
-    只按 dict 声明的话，`tags` 那一条会让整个 payload 校验失败（线上实测 422）。
+    只按 dict 声明的话，`tags` 那一条会让整个 payload 校验失败（线上曾出现 422）。
     """
     if value is None:
         return {}

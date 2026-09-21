@@ -25,7 +25,7 @@ from app.logging_setup import get_logger, log
 
 logger = get_logger("app.integrations.deepseek")
 
-SYSTEM_PROMPT = """你是 BAAI 基础设施运维的故障诊断助手。你会收到一个已聚合的 Incident，
+SYSTEM_PROMPT = """你是基础设施运维的故障诊断助手。你会收到一个已聚合的 Incident，
 包含关联告警列表、拓扑关系、Prometheus 指标摘要和 Kubernetes 事实。
 
 必须遵守：
@@ -103,7 +103,7 @@ _MASK_ASSET_KEYS = {
 }
 
 # 这些键的值是“组件名 / 指标名 / 规则名 / 类型名”，不是资产信息。
-# 实测踩过：把 alertname 掩成 <host-1>（NodeDiskIoBusy 以 Node 开头）、
+# 曾出现过：把 alertname 掩成 <host-1>（NodeDiskIoBusy 以 Node 开头）、
 # 把 job 掩成 <host-2>（node-exporter）、把 pod 名掩掉，
 # 结果 prompt 里出现 200 处 <host->，模型直接说「指标名被掩码，无法判断是 io_time 还是其它计数器」。
 _MASK_SKIP_KEYS = {
@@ -141,7 +141,7 @@ _MASK_SKIP_KEYS = {
 def _mask(obj: Any, mapping: dict[str, str], counters: dict[str, int]) -> Any:
     """把资产标识（IP / 主机名）替换为稳定占位符，同一实体映射到同一占位符。
 
-    分两类处理，理由是实测踩过两头：
+    分两类处理，理由是曾出现过：两头：
       · 按**字段**掩资产：真实主机名是 bm-example-… / p-example-… 这种，不在关键词表里，
         靠关键词匹配等于没掩到（而组件名 node-exporter / 规则名 NodeDiskIoBusy 反而被误掩）。
       · 按**模式**掩自由文本：summary / annotations 里的 IP 与主机名靠正则兜底。

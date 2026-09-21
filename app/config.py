@@ -57,7 +57,7 @@ class Settings:
         self.rules_dir: Path = Path(_env("AIOPS_RULES_DIR", str(BASE_DIR / "rules")))
 
         # --- Alert / Incident 生命周期 ---
-        # ⚠️ stale 窗口必须**大于告警源的重发周期**（线上实测夜莺是 3600 秒）。
+        # stale 窗口必须**大于告警源的重发周期**（线上曾出现夜莺是 3600 秒）。
         # 原来是 900 秒：一个持续未恢复的故障每小时被判一次 stale、下一次重发又被
         # 当成新告警建新单 —— 09-14~09-15 一场四天没恢复的 master 故障因此被切成
         # 17 张工单、24 次 LLM 调用、24 张卡片，且每条 Alert 的 occurrence_count 都是 1，
@@ -69,7 +69,7 @@ class Settings:
         # 而不是新建一张。stale 窗口只能防「连续重发」，这一层防「有间隔的复发」。
         self.incident_recurrence_hours: int = _env_int("AIOPS_INCIDENT_RECURRENCE_HOURS", 24)
 
-        # --- 主动恢复探测（用户 2026-09-15 要求：等人工处理完要能自动发现恢复）---
+        # --- 主动恢复探测（等人工处理完要能自动发现恢复）---
         # 告警静默只是"没消息"，不能当恢复；夜莺也不一定发 is_recovered。
         # 所以对「已无 FIRING 告警 + 静默够久」的工单主动查权威判据（K8s Ready / node-exporter up）：
         # 探测到真恢复 → 关单 + 群里通报恢复卡；没探测到 → 保持 OPEN，等次日 09:00 汇总。
@@ -110,7 +110,7 @@ class Settings:
         self.feishu_incident_webhook: str | None = _env("AIOPS_FEISHU_INCIDENT_WEBHOOK")
         self.feishu_timeout: float = _env_float("AIOPS_FEISHU_TIMEOUT", 8)
 
-        # --- 噪声抑制（用户 2026-09-15 要求）---
+        # --- 噪声抑制---
         # 同一工单的告警卡片每个自然日最多一张：事件驱动照旧（工单该建就建、
         # 该关联就关联），只是卡片按天收口。恢复卡不受限（终态、每单一次、是好消息）。
         self.daily_card_cap: bool = _env_bool("AIOPS_DAILY_CARD_CAP", True)
@@ -120,7 +120,7 @@ class Settings:
         # 没有未恢复工单时是否也发汇总卡（默认不发：只在有事时汇报，避免每天一张平安卡）。
         self.daily_digest_always: bool = _env_bool("AIOPS_DAILY_DIGEST_ALWAYS", False)
         # 卡片里 Web 详情链接的对外根地址（如 https://aiops.example.com）。
-        # 默认指向网关自身（内网直接访问）：卡片上的「查看工单详情」按钮需要**绝对地址**，
+        # 默认指向网关自身（私有网络直接访问）：卡片上的「查看工单详情」按钮需要**绝对地址**，
         # 而飞书卡片是在客户端渲染的，相对路径点不动 —— 所以这里必须有值按钮才会出现。
         # 换域名/别的网段地址时用环境变量 AIOPS_PUBLIC_BASE_URL 覆盖即可（不用改代码）。
         self.public_base_url: str | None = (
@@ -131,7 +131,7 @@ class Settings:
         self.display_timezone: str = _env("AIOPS_DISPLAY_TZ", "Asia/Shanghai")
 
         # 调试开关：跳过事件幂等（同一份 body 可反复处理）。
-        # ⚠️ 仅供联调反复触发整条链路用，生产必须关闭 ——
+        # 仅供联调反复触发整条链路用，生产必须关闭 ——
         # 打开后夜莺的 HTTP 重试会重复建工单。状态在 /readyz 可见。
         self.debug_skip_dedup: bool = _env_bool("AIOPS_DEBUG_SKIP_DEDUP", False)
 
