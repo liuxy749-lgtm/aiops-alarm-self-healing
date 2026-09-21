@@ -1,0 +1,25 @@
+# 运行数据（含 raw 告警原文、SQLite 状态库）——不进仓库
+data/
+data-backup-*/
+
+# 凭据：K8s 只读 token / CA / kubeconfig，明文，绝不入库
+k8s-readonly/
+
+# 环境与密钥
+.env
+*.env
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 编辑器/系统
+.vscode/
+.idea/
+*.swp
+.DS_Store

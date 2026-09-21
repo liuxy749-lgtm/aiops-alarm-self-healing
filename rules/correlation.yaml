@@ -1,0 +1,87 @@
+# 关联引擎配置（一期）
+version: 1
+
+threshold: 70
+
+# 关联评分权重（设计文档 §16）
+weights:
+  exact_entity: 50
+  same_physical_node: 40
+  topology_distance_1: 30
+  topology_distance_2: 15
+  same_cluster: 10
+  same_namespace: 10
+  same_project: 5
+  time_1m: 20
+  time_3m: 15
+  time_5m: 10
+
+# ---- 对设计文档的必要修正 ----
+# 文档 §16 的评分表本身不自洽：same_physical_node(40) + same_cluster(10) + ≤1min(20) = 70，
+# 恰好达到阈值，会导致「同节点但互不相关」的两条告警（§39 Case 5：
+# DiskUsageHigh + GPUHighTemperature）被错误合并 —— 而这正是文档最担心的过度关联。
+#
+# 因此增加「强关联信号」门槛：必须至少命中一个强信号才允许合并。
+# same_node / same_cluster / same_project / 时间接近 只做加法，单独不足以成链。
+# 一期要成链的场景都有强信号：NodeNotReady 系走 force_link，Pod↔Node 走 causal_rule。
+require_strong_link: true
+strong_link_signals:
+  - exact_entity
+  - topology
+  - causal_rule
+  - force_link
+
+# 时间窗口（秒），按告警类型覆盖
+correlation_windows:
+  default: 300
+  NodeNotReady: 300
+  KubeletDown: 300
+  NodeExporterDown: 300
+  DCGMExporterDown: 300
+  PodNotReady: 180
+  CrashLoopBackOff: 180
+  OOMKilled: 180
+  GPUXidError: 600
+  NCCLTimeout: 600
+  RDMANetworkError: 600
+
+# 强制关联：命中即合并，不看分数
+force_link:
+  NodeNotReady:
+    - KubeletDown
+    - NodeExporterDown
+    - DCGMExporterDown
+
+# 禁止关联：命中即不合并，优先级最高
+never_link:
+  DiskUsageHigh:
+    - GPUHighTemperature
+  GPUHighTemperature:
+    - DiskUsageHigh
+
+# 根因优先级：数值越大越可能是根因。
+# 新到达的告警优先级高于当前 root 时将提升为 root（修正设计文档「attach 时写死 SYMPTOM」的问题）。
+root_priority:
+  NICError: 100
+  NodeNotReady: 95
+  RDMANetworkError: 90
+  GPUXidError: 85
+  KubeletDown: 80
+  NodeExporterDown: 70
+  DCGMExporterDown: 70
+  GPUMissing: 70
+  KernelPanic: 110
+  DiskUsageHigh: 40
+  CrashLoopBackOff: 25
+  OOMKilled: 25
+  PodNotReady: 20
+  default: 10
+
+# fingerprint 参与计算的 label（顺序即拼接顺序）。禁止放入 value / timestamp。
+fingerprint_dimensions:
+  default: []
+  pod: [namespace, pod, container]
+  container: [namespace, pod, container]
+  gpu: [gpu_index, device]
+  disk: [mountpoint, device]
+  interface: [interface]

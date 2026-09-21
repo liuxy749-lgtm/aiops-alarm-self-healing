@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>告警来了会怎样？—— 用 5 岁小朋友能懂的话讲清 AIOps 流程</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#fff; --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb;
+    --blue:#2563eb; --green:#059669; --amber:#d97706; --purple:#7c3aed; --red:#dc2626;
+    --shadow:0 4px 16px rgba(17,24,39,.08);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    line-height:1.75; font-size:17px;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:28px 20px 80px}
+  header.hero{
+    background:linear-gradient(135deg,#1e3a8a,#4f46e5 55%,#7c3aed);
+    color:#fff; border-radius:20px; padding:34px 30px; box-shadow:var(--shadow);
+  }
+  header.hero h1{margin:0 0 10px; font-size:30px; line-height:1.35}
+  header.hero p{margin:6px 0; opacity:.95}
+  .pill{display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35);
+        padding:3px 12px; border-radius:999px; font-size:14px; margin:6px 8px 0 0}
+  h2{margin:44px 0 14px; font-size:24px; border-left:6px solid var(--blue); padding-left:12px}
+  h3{margin:26px 0 8px; font-size:19px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px 22px; box-shadow:var(--shadow); margin:14px 0}
+  .grid{display:grid; gap:14px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+  .role{display:flex; gap:12px; align-items:flex-start}
+  .role .emoji{font-size:34px; line-height:1.1}
+  .role b{display:block; font-size:17px}
+  .role small{color:var(--muted)}
+  .tag{display:inline-block; font-size:13px; padding:2px 10px; border-radius:999px; background:#eef2ff; color:#3730a3; margin-top:6px}
+  /* 流程步骤 */
+  .steps{counter-reset:s; margin-top:8px}
+  .step{position:relative; background:var(--card); border:1px solid var(--line); border-left:6px solid var(--blue);
+        border-radius:14px; padding:16px 20px 16px 22px; margin:12px 0; box-shadow:var(--shadow)}
+  .step:before{counter-increment:s; content:counter(s); position:absolute; right:16px; top:12px;
+        font-size:34px; font-weight:800; color:#eef2ff}
+  .step.kid{border-left-color:var(--green)}
+  .step.why{background:#fffbeb; border-left-color:var(--amber); font-size:16px}
+  .step h3{margin:0 0 6px; font-size:18px}
+  .step p{margin:6px 0}
+  .step .real{font-size:14px; color:var(--muted); margin-top:8px}
+  .step .real code{background:#f3f4f6; padding:1px 6px; border-radius:5px; color:#111827}
+  /* 流程图 */
+  .flow{display:flex; flex-wrap:wrap; align-items:stretch; gap:10px; margin:16px 0}
+  .node{flex:1 1 150px; min-width:150px; background:#fff; border:2px solid var(--line); border-radius:14px;
+        padding:14px 12px; text-align:center; box-shadow:var(--shadow)}
+  .node .ico{font-size:30px}
+  .node b{display:block; margin:6px 0 2px; font-size:15px}
+  .node small{color:var(--muted); font-size:13px}
+  .node.n1{border-color:#93c5fd} .node.n2{border-color:#a7f3d0}
+  .node.n3{border-color:#fcd34d} .node.n4{border-color:#c4b5fd}
+  .node.n5{border-color:#fca5a5}
+  .arrow{align-self:center; font-size:22px; color:#9ca3af}
+  .pulse{animation:p 2.4s ease-in-out infinite}
+  @keyframes p{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+  /* 对照表 */
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:15.5px; background:#fff}
+  th,td{border:1px solid var(--line); padding:10px 12px; text-align:left; vertical-align:top}
+  th{background:#f9fafb; font-weight:700}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:14px}
+  .num{font-weight:800; color:var(--green)}
+  .warn{background:#fef2f2; border:1px solid #fecaca; border-left:6px solid var(--red); border-radius:14px; padding:16px 20px; margin:14px 0}
+  .ok{background:#ecfdf5; border:1px solid #a7f3d0; border-left:6px solid var(--green); border-radius:14px; padding:16px 20px; margin:14px 0}
+  details{background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 16px; margin:10px 0}
+  summary{cursor:pointer; font-weight:700}
+  ul{margin:8px 0 8px 22px} li{margin:5px 0}
+  .foot{margin-top:48px; color:var(--muted); font-size:14px; text-align:center}
+  .big{font-size:19px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>🚨 半夜机器生病了，谁来看病？</h1>
+  <p class="big">这份网页用最简单的话，讲清我们这套「告警自动处理系统」现在是怎么运转的。</p>
+  <p>不用懂技术也能看懂：把每个部件想成一个人，看看他们怎么接力。</p>
+  <div>
+    <span class="pill">当前版本：一期 + 副作用出锁（2026-09-11）</span>
+    <span class="pill">入库只要约 100 毫秒</span>
+    <span class="pill">AI 看病要 5~16 秒</span>
+  </div>
+</header>
+
+<h2>一、先认识这几个人</h2>
+<div class="grid g3">
+
+  <div class="card role">
+    <div class="emoji">🔔</div>
+    <div><b>夜莺（值班保安）</b>
+      <small>一直在盯着机器。哪台机器不对劲，它第一个发现，然后马上打电话通知别人。</small>
+      <div class="tag">真实名字：Nightingale 监控告警系统</div>
+    </div>
+  </div>
+
+  <div class="card role">
+    <div class="emoji">🎧</div>
+    <div><b>网关（接线员）</b>
+      <small>接到电话第一件事：先在记事本上写下来，然后立刻说“收到！”，绝不让对方一直等着。</small>
+      <div class="tag">真实名字：aiops-gateway（我们自己的程序）</div>
+    </div>
+  </div>
+
+  <div class="card role">
+    <div class="emoji">📒</div>
+    <div><b>记事本（档案柜）</b>
+      <small>所有来电原文都一字不改地留着，以后复查、学习都靠它。</small>
+      <div class="tag">真实名字：raw_events 文件 + SQLite 数据库</div>
+    </div>
+  </div>
+
+  <div class="card role">
+    <div class="emoji">🔍</div>
+    <div><b>侦探（关联警察）</b>
+      <small>接到很多电话时会想：这些是不是同一件事？同一台机器、时间又接近，就是同一场病，合成一张单子。</small>
+      <div class="tag">真实名字：Correlation Engine 关联引擎</div>
+    </div>
+  </div>
+
+  <div class="card role">
+    <div class="emoji">📷</div>
+    <div><b>取证员（跑现场）</b>
+      <small>去看机器最近的“体温曲线”，再翻翻机器的台账（哪些程序在跑、状态正不正常）。</small>
+      <div class="tag">真实名字：Prometheus 指标 + K8s 只读接口</div>
+    </div>
+  </div>
+
+  <div class="card role">
+    <div class="emoji">👩‍⚕️</div>
+    <div><b>医生（AI）</b>
+      <small>拿着证据判断“最可能是什么病”，并且必须说清：证据是哪几条、有几成把握。</small>
+      <div class="tag">真实名字：DeepSeek 大模型</div>
+    </div>
+  </div>
+
+  <div class="card role">
+    <div class="emoji">📢</div>
+    <div><b>大喇叭（群里喊人）</b>
+      <small>把结论贴到工作群里，让该处理的人一眼看懂发生了什么。</small>
+      <div class="tag">真实名字：飞书群机器人</div>
+    </div>
+  </div>
+
+  <div class="card role">
+    <div class="emoji">🧑‍🔧</div>
+    <div><b>助手（后台慢工）</b>
+      <small>接线员说完“收到”就把活儿交给助手：跑现场、请医生、发通知，都由助手慢慢做。</small>
+      <div class="tag">真实名字：后台 worker（副作用出锁）</div>
+    </div>
+  </div>
+
+</div>
+
+<h2>二、然后，事情按 8 步发生</h2>
+<div class="steps">
+
+  <div class="step">
+    <h3>第 1 步：保安发现机器不对劲，打来电话</h3>
+    <p>比如一台机器的“心跳”不见了（专业说法：节点 NotReady）。保安立刻给接线员打电话。</p>
+    <div class="real">真实动作：夜莺用 HTTP POST 把告警发到 <code>192.0.2.115:8701/api/v1/events/nightingale</code></div>
+  </div>
+
+  <div class="step">
+    <h3>第 2 步：接线员第一件事——把电话内容一字不改地记下来</h3>
+    <p>就像接到重要电话时，先记在纸上，免得等下忘了细节。记完才做别的。</p>
+    <div class="real">真实动作：原始告警原封不动写进按天切分的 JSONL 文件（<code>data/raw_events/</code>），并记下文件位置</div>
+  </div>
+
+  <div class="step">
+    <h3>第 3 步：看懂它在说什么</h3>
+    <p>电话里可能说得很乱。接线员把它整理成一句人话：<b>哪台机器、什么毛病、多严重、什么时候发生</b>。</p>
+    <div class="real">真实动作：标准化（Normalize）→ 实体 + 严重级 + 发生时间 + 幂等键</div>
+  </div>
+
+  <div class="step why">
+    <h3>第 4 步：同样的话说两遍，只算一次</h3>
+    <p><b>为什么要这样：</b>保安有时会重复打同一个电话（网络重试、告警反复触发）。如果每次都当真，群里就会被同一条消息刷屏。所以每通电话都有一个“指纹”，一样的指纹只处理一次。</p>
+    <div class="real">真实动作：幂等键 = 夜莺 <code>hash + 状态 + 触发时间</code>；数据库还有唯一约束兜底，绝不重复建单</div>
+  </div>
+
+  <div class="step">
+    <h3>第 5 步：侦探判断“这是不是同一件事”，合成一张工单</h3>
+    <p>一起来的十通电话，可能是同一场病。侦探按这几条线索打分：<b>同一台机器、机器之间有从属关系、同一个集群、时间很接近</b>。分数够了就合成一张工单。</p>
+    <div class="real">真实动作：关联打分（同节点 +40 / 拓扑 +30 / 同集群 +10 / 1 分钟内 +20，阈值 70）→ 生成或挂入工单，并标出谁是根因、谁是症状</div>
+  </div>
+
+  <div class="step kid">
+    <h3>🎉 第 6 步：接线员立刻说“收到！”（约 100 毫秒）</h3>
+    <p>到这一步，接线员已经记录完了，他就马上回一句“收到”，然后腾出手去接下一个电话。<b>注意：他还没去看现场、还没请医生。</b></p>
+    <div class="real">真实动作：返回 HTTP 200，实测 87~124 毫秒（以前要 11~15 秒）</div>
+  </div>
+
+  <div class="step">
+    <h3>第 7 步：助手慢慢干活——跑现场取证</h3>
+    <p>助手先去看机器最近的“体温曲线”（CPU、内存、网络丢包、磁盘忙不忙……），再去翻台账：机器在集群里是什么状态、上面跑着哪些程序、有没有异常记录。</p>
+    <div class="real">真实动作：Prometheus 查历史曲线（一次 4~14 条查询）+ K8s 只读接口读节点状态/Pod 列表/事件</div>
+  </div>
+
+  <div class="step">
+    <h3>第 8 步：医生看证据下判断，然后群里喊人</h3>
+    <p>医生必须做到三件事：<b>① 说最可能的原因；② 把用到的证据一条条列出来；③ 说有几成把握。</b>证据不够就必须承认“看不准”，不许瞎猜。</p>
+    <div class="real">真实动作：DeepSeek 生成「结论 + 证据 + 置信度 + 建议排查步骤」→ 飞书卡片推到群里（创建 / 根因变化 / 关闭 三个时机各推一次，不刷屏）</div>
+  </div>
+
+</div>
+
+<h2>三、一张图看懂整条流水线</h2>
+<div class="flow">
+  <div class="node n1"><div class="ico">🔔</div><b>夜莺发现异常</b><small>打电话</small></div>
+  <div class="arrow">➜</div>
+  <div class="node n2"><div class="ico">🎧</div><b>网关记录+看懂</b><small>记原文 / 整理 / 去重</small></div>
+  <div class="arrow">➜</div>
+  <div class="node n3"><div class="ico">🔍</div><b>合成工单</b><small>相关的算一件事</small></div>
+  <div class="arrow">➜</div>
+  <div class="node n1"><div class="ico">✅</div><b>马上说“收到”</b><small>~100 毫秒</small></div>
+</div>
+<div class="flow">
+  <div class="node n4"><div class="ico">🧑‍🔧</div><b>助手接手（后台）</b><small>这时接线员已经去接下一通电话了</small></div>
+  <div class="arrow">➜</div>
+  <div class="node n4"><div class="ico">📷</div><b>取证</b><small>指标曲线 + K8s 台账</small></div>
+  <div class="arrow">➜</div>
+  <div class="node n5"><div class="ico">👩‍⚕️</div><b>AI 诊断</b><small>5~16 秒</small></div>
+  <div class="arrow">➜</div>
+  <div class="node n5"><div class="ico">📢</div><b>群里出卡片</b><small>约 10~15 秒后</small></div>
+</div>
+
+<h2>四、为什么第 6 步要“先说收到、再慢慢干活”？</h2>
+<div class="warn">
+  <h3 style="margin-top:0">❌ 以前的做法（会出问题）</h3>
+  <p>接线员接到电话后，<b>一直拿着话筒不吭声</b>：先跑现场、再请医生、再把结论写好，整整 11~15 秒才说“收到”。</p>
+  <p>打电话的保安等不及了，心想「是不是没人接？」，于是挂掉重打，打不通又重打……结果同一起故障被当成新故障，建了好几张单子、群里刷了好几遍。</p>
+  <p class="real">真实现象：夜莺报 <code>context deadline exceeded (Client.Timeout exceeded while awaiting headers)</code>，但群里其实收到了卡片 —— 因为我们的活儿干完了，只是回话太慢。</p>
+</div>
+<div class="ok">
+  <h3 style="margin-top:0">✅ 现在的做法</h3>
+  <p>接线员<b>先说“收到”（约 100 毫秒）</b>，再把活儿交给助手，自己去接下一个电话。等医生看完病，结果再单独通知。</p>
+  <p><b>好处：</b>保安不再重复打电话；就算同时来一百个电话，也不会一个卡住全部（以前第一次超时会把后面所有告警都堵住）。</p>
+</div>
+
+<details>
+  <summary>🔧 给好奇的大人：这一改动在程序里是怎么做的？</summary>
+  <ul>
+    <li>网络请求里只做“数据库短事务”：<code>存原文 → 整理 → 提高等级/去重 → 建工单</code>，全部是毫秒级动作。</li>
+    <li>“取证 + AI + 通知”被放进后台单线程队列（<code>app/services/worker.py</code>），不再占用那个网络请求。</li>
+    <li>工单上记了进度：<code>PENDING（排队中）→ RUNNING（正在做）→ DONE（做完了）/ FAILED（失败了，附原因）</code>。运维一眼就能看出“工单为什么还没有诊断”。</li>
+    <li>如果程序被重启，第 2 步记录的进度会告诉它「哪些活儿还没干完」，启动后自动接着干。</li>
+    <li>留了一个总开关 <code>AIOPS_INLINE_ANALYSIS=true</code>：万一新做法有问题，改一行就能退回“老办法”。</li>
+  </ul>
+</details>
+
+<h2>五、每一站的“真实身份”</h2>
+<table>
+  <tr><th>小朋友看到的</th><th>实际是什么</th><th>地址 / 名字</th></tr>
+  <tr><td>🔔 值班保安</td><td>夜莺监控告警系统（n9e v8.5.1）</td><td><code>192.0.2.250</code>，通过 HTTP 回调把告警发给我们</td></tr>
+  <tr><td>🎧 接线员</td><td>我们自己的网关程序（单副本）</td><td><code>192.0.2.115:8701</code></td></tr>
+  <tr><td>📒 记事本</td><td>原始告警文件 + SQLite 数据库</td><td><code>data/raw_events/*.jsonl</code>、<code>data/aiops.db</code></td></tr>
+  <tr><td>📷 体温曲线</td><td>Prometheus 查询接口（只读）</td><td><code>http://192.0.2.13:9090</code>（dx0 集群）</td></tr>
+  <tr><td>📋 机器台账</td><td>K8s 只读接口（只许看，不许改）</td><td><code>https://192.0.2.66:6443</code>，账号 <code>aiops-readonly</code></td></tr>
+  <tr><td>👩‍⚕️ 医生</td><td>DeepSeek 大模型</td><td>模型 <code>deepseek-v4-flash</code></td></tr>
+  <tr><td>📢 大喇叭</td><td>飞书群机器人</td><td>工单卡片推到一个群，每条告警的简报推到另一个通道</td></tr>
+  <tr><td>🧑‍🔧 助手</td><td>后台工作线程</td><td>同进程内的单线程队列（二期会换成更可靠的数据库队列）</td></tr>
+</table>
+
+<h2>六、现在的成绩单</h2>
+<div class="grid g2">
+  <div class="card">
+    <h3 style="margin-top:0">⏱ 速度</h3>
+    <ul>
+      <li>入库（说“收到”）：<span class="num">约 100 毫秒</span>（以前 11~15 秒）</li>
+      <li>AI 看病：<span class="num">5~16 秒</span></li>
+      <li>群里看到卡片：<span class="num">约 10~15 秒后</span></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">🧪 靠谱程度</h3>
+    <ul>
+      <li>42 个自动化测试全绿</li>
+      <li>同一告警重复送 100 次 → 仍然只有 1 张单子</li>
+      <li>8 条告警的风暴 → 合成 1 张工单（压缩率 87.5%）</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">🛡 安全边界</h3>
+    <ul>
+      <li>只许<b>看</b>集群，不许改（连读密码都不给）</li>
+      <li>资产名字在出网前先换成代号，回来再换回真名</li>
+      <li>它<b>不会</b>登录任何机器、也不会执行任何命令</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">📦 记性</h3>
+    <ul>
+      <li>原始告警留 30 天，工单/事件留 90 天</li>
+      <li>每次诊断的“证据 + 置信度”都存库，可复查</li>
+    </ul>
+  </div>
+</div>
+
+<h2>七、老实说，现在还做不到这些</h2>
+<div class="card">
+  <ul>
+    <li><b>它不能自己修</b>：只诊断、只通知，动手还得人来（这是有意的）。</li>
+    <li><b>它不能登录机器</b>：所以给的建议里会写“请人工执行 <code>ethtool</code> / <code>dmesg</code>”这类需要人做的事。</li>
+    <li><b>它还看不到日志内容</b>（二期要加：从 K8s 接口拉容器日志当证据）。</li>
+    <li><b>它不知道“刚改过什么”</b>（二期要接变更记录：故障前有没有人发版、改配置）。</li>
+    <li><b>它没有历史记忆</b>：还不能说“这毛病上个月出现过，当时是这么解决的”（二期做知识库）。</li>
+    <li><b>它还只有一台</b>：这台机器挂了就全停（二期换数据库 + 多副本）。</li>
+    <li><b>第一张卡片可能只显示 1 条告警</b>：因为它发得太快了（二期加“等 30 秒再发”的聚合窗口）。</li>
+  </ul>
+</div>
+
+<h2>八、小词典（术语 → 小朋友说法）</h2>
+<table>
+  <tr><th>术语</th><th>说人话</th></tr>
+  <tr><td>告警（Alert）</td><td>“这台机器不对劲”的一条通知</td></tr>
+  <tr><td>工单（Incident）</td><td>把同一场病的多条通知合成的一张病历单</td></tr>
+  <tr><td>根因 / 症状</td><td>病根（机器坏了） / 表现（上面跑的程序也不正常了）</td></tr>
+  <tr><td>富化（Enrich）</td><td>给这条通知补上背景资料：机器在哪、什么配置、谁家的</td></tr>
+  <tr><td>上下文（Context）</td><td>医生看病前收集的全部证据（曲线 + 台账）</td></tr>
+  <tr><td>置信度（Confidence）</td><td>医生说的“我有几成把握”</td></tr>
+  <tr><td>幂等</td><td>同一句话听一百遍也只当一遍</td></tr>
+  <tr><td>副作用出锁</td><td>先说“收到”，慢活儿交给助手在后台做</td></tr>
+</table>
+
+<p class="foot">
+  生成时间：2026-09-11 · 对应系统版本：AIOps 一期 + 副作用出锁<br>
+  配套文档：<code>design-doc/aiops-phase1.md</code>（设计与实施）、<code>design-doc/aiops-phase2.md</code>（二期详设 v2.2）
+</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,87 @@
+# Context Collector 查询模板
+#
+# 指标一律用 range query 回溯：NodeNotReady 时 node_exporter 已经掉线，
+# 即时查询只能拿到 0，没有诊断价值。
+#
+# 可用变量（缺失时整条查询跳过，避免查出全网数据）：
+#   $target     目标实例匹配值 = ip → hostname → 实体 id 依次兜底
+#               （实测很多裸机告警的 target_ident 是主机名而不是 IP，
+#                所以匹配 instance 一律用 $target，不要用 $ip）
+#   $node       alert.node（节点类告警会兜底成实体 id）
+#   $hostname   alert.hostname
+#   $namespace  alert.namespace
+#   $pod        alert.entity_id
+#
+# 回溯窗口/step/查询上限在 config.py（AIOPS_CONTEXT_* 环境变量），不在这里重复配置。
+version: 1
+
+queries:
+  # 说明：本平台监管范围是 K8s 平台，实体元数据以 kube-state-metrics 为准；
+  # node_* 是节点 OS 指标，靠 $target 正则同时命中「主机名注册」与「IP:9100 注册」两种 target。
+  NodeNotReady:
+    - 'kube_node_status_condition{node="$node",condition="Ready"}'
+    - 'kube_node_spec_unschedulable{node="$node"}'
+    - 'up{instance=~"$target.*"}'
+    - 'node_load5{instance=~"$target.*"}'
+    - 'node_memory_MemAvailable_bytes{instance=~"$target.*"}'
+    - 'node_filesystem_avail_bytes{instance=~"$target.*"}'
+    - 'rate(node_network_receive_bytes_total{instance=~"$target.*"}[5m])'
+    - 'node_timex_offset_seconds{instance=~"$target.*"}'
+  KubeletDown:
+    - 'kube_node_status_condition{node="$node",condition="Ready"}'
+    - 'up{instance=~"$target.*",job=~".*kubelet.*"}'
+  NodeExporterDown:
+    - 'up{instance=~"$target.*",job=~".*node.*"}'
+  DCGMExporterDown:
+    - 'up{instance=~"$target.*",job=~".*dcgm.*"}'
+  PodNotReady:
+    - 'kube_pod_info{namespace="$namespace",pod="$pod"}'
+    - 'kube_pod_status_ready{namespace="$namespace",pod="$pod"}'
+    - 'kube_pod_container_status_restarts_total{namespace="$namespace",pod="$pod"}'
+    - 'kube_pod_container_status_last_terminated_reason{namespace="$namespace",pod="$pod"}'
+  CrashLoopBackOff:
+    - 'kube_pod_info{namespace="$namespace",pod="$pod"}'
+    - 'kube_pod_container_status_restarts_total{namespace="$namespace",pod="$pod"}'
+    - 'kube_pod_container_status_waiting_reason{namespace="$namespace",pod="$pod",reason="CrashLoopBackOff"}'
+  OOMKilled:
+    - 'kube_pod_info{namespace="$namespace",pod="$pod"}'
+    - 'kube_pod_container_status_last_terminated_reason{namespace="$namespace",pod="$pod",reason="OOMKilled"}'
+    # 实测：容器内存指标在本环境是记录规则名（带 namespace: 前缀），
+    # 直接查 container_memory_working_set_bytes 返回空
+    - 'node_namespace_pod_container:container_memory_working_set_bytes{namespace="$namespace",pod="$pod"}'
+  GPUXidError:
+    - 'DCGM_FI_DEV_XID_ERRORS{instance=~"$target.*"}'
+    - 'DCGM_FI_DEV_GPU_TEMP{instance=~"$target.*"}'
+    - 'DCGM_FI_DEV_GPU_UTIL{instance=~"$target.*"}'
+  GPUHighTemperature:
+    - 'DCGM_FI_DEV_GPU_TEMP{instance=~"$target.*"}'
+    - 'DCGM_FI_DEV_GPU_UTIL{instance=~"$target.*"}'
+  DiskUsageHigh:
+    - 'node_filesystem_avail_bytes{instance=~"$target.*"}'
+    - 'node_filesystem_size_bytes{instance=~"$target.*"}'
+    - 'node_disk_io_time_seconds_total{instance=~"$target.*"}'
+  # 实测：生产环境真实存在该告警类型（磁盘 IO 繁忙）
+  NodeDiskIoBusy:
+    - 'rate(node_disk_io_time_seconds_total{instance=~"$target.*"}[5m])'
+    - 'rate(node_disk_io_time_weighted_seconds_total{instance=~"$target.*"}[5m])'
+    - 'rate(node_disk_read_time_seconds_total{instance=~"$target.*"}[5m])'
+    - 'rate(node_disk_write_time_seconds_total{instance=~"$target.*"}[5m])'
+    - 'node_load5{instance=~"$target.*"}'
+  RDMANetworkError:
+    - 'rate(node_network_receive_drop_total{instance=~"$target.*"}[5m])'
+  NCCLTimeout:
+    - 'rate(node_network_receive_drop_total{instance=~"$target.*"}[5m])'
+  # 实测：生产环境真实存在这个告警类型，原来落到 default 只查了 up，拿不到重传趋势
+  NodeTcpRetransHigh:
+    - 'up{instance=~"$target.*"}'
+    - 'rate(node_netstat_Tcp_RetransSegs{instance=~"$target.*"}[5m])'
+    - 'rate(node_netstat_Tcp_OutSegs{instance=~"$target.*"}[5m])'
+    - 'rate(node_network_receive_drop_total{instance=~"$target.*"}[5m])'
+  # 兜底：未命中类型时使用。
+  # ⚠️ 必须放在 queries: 段内部 —— rules.py 只读 queries 段，
+  #    放在顶层（缩进 0）的话永远不会被读到，表现为「没专属模板的告警 queries=0」。
+  default:
+    - 'up{instance=~"$target.*"}'
+    - 'node_load5{instance=~"$target.*"}'
+    - 'rate(node_network_receive_drop_total{instance=~"$target.*"}[5m])'
+    - 'rate(node_disk_io_time_seconds_total{instance=~"$target.*"}[5m])'

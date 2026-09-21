@@ -1,0 +1,111 @@
+# 确定性故障链（运维维护）。一期只保证 NodeNotReady 链路，其余按实际环境逐步校准。
+version: 1
+
+rules:
+  - id: CR-K8S-001
+    name: node_not_ready_children
+    cause:
+      alertname: NodeNotReady
+    symptoms:
+      - KubeletDown
+      - NodeExporterDown
+      - DCGMExporterDown
+      - PodNotReady
+      - PodEvicted
+      - ContainerWriteError
+    match:
+      same_node: true
+    window:
+      before_seconds: 60
+      after_seconds: 300
+    relation:
+      type: SYMPTOM
+    weight: 50
+
+  - id: CR-NET-001
+    name: network_error_leads_node_not_ready
+    cause:
+      alertname: NICError
+    symptoms:
+      - NodeNotReady
+      - KubeletDown
+      - NodeExporterDown
+      - DCGMExporterDown
+      - PodNotReady
+    match:
+      same_node: true
+    window:
+      before_seconds: 120
+      after_seconds: 600
+    relation:
+      type: SYMPTOM
+    weight: 50
+
+  - id: CR-DISK-001
+    name: disk_full_children
+    cause:
+      alertname: DiskUsageHigh
+    symptoms:
+      - PodEvicted
+      - ContainerWriteError
+      - ImagePullFailure
+      - FilesystemReadOnly
+    match:
+      same_node: true
+    window:
+      before_seconds: 60
+      after_seconds: 900
+    relation:
+      type: SYMPTOM
+    weight: 40
+
+  - id: CR-OOM-001
+    name: oom_children
+    cause:
+      alertname: OOMKilled
+    symptoms:
+      - PodNotReady
+      - CrashLoopBackOff
+      - ApplicationUnavailable
+    match:
+      same_node: true
+    window:
+      before_seconds: 60
+      after_seconds: 600
+    relation:
+      type: SYMPTOM
+    weight: 40
+
+  - id: CR-GPU-001
+    name: gpu_xid_related
+    cause:
+      alertname: GPUXidError
+    symptoms:
+      - GPUMissing
+      - GPUUtilizationZero
+      - TrainingJobError
+    match:
+      same_node: true
+    window:
+      before_seconds: 120
+      after_seconds: 600
+    relation:
+      type: SYMPTOM
+    weight: 40
+
+  - id: CR-NET-002
+    name: rdma_leads_nccl
+    cause:
+      alertname: RDMANetworkError
+    symptoms:
+      - NCCLTimeout
+      - TrainingThroughputDrop
+      - DistributedJobFailure
+    match:
+      same_node: true
+    window:
+      before_seconds: 120
+      after_seconds: 900
+    relation:
+      type: SYMPTOM
+    weight: 40
